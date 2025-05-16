@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8 Queens Puzzle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      margin: 20px auto;
+      border: 4px solid #333;
+      max-width: 480px;
+    }
+
+    .cell {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .black {
+      background-color: #769656;
+    }
+
+    .white {
+      background-color: #eeeed2;
+    }
+
+    .conflict {
+      background-color: #ff6b6b !important;
+    }
+
+    .controls {
+      margin: 20px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #3a5a80;
+    }
+
+    #status {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0;
+      min-height: 27px;
+    }
+
+    .instructions {
+      max-width: 600px;
+      margin: 0 auto 20px;
+      text-align: left;
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>8 Queens Puzzle</h1>
+  
+  <div class="instructions">
+    <p><strong>Goal:</strong> Place 8 queens on the board so that no queen can attack another.</p>
+    <p><strong>Rules:</strong> Queens can attack horizontally, vertically, and diagonally.</p>
+    <p><strong>How to play:</strong> Click on a square to place or remove a queen. Red queens indicate conflicts.</p>
+  </div>
+  
+  <div class="board" id="chessboard"></div>
+  
+  <p id="status">Queens placed: 0/8</p>
+  
+  <div class="controls">
+    <button id="resetBtn">Reset</button>
+    <button id="solveBtn">Show Solution</button>
+  </div>
+
+  <script>
+    const board = document.getElementById("chessboard");
+    const statusText = document.getElementById("status");
+    const resetBtn = document.getElementById("resetBtn");
+    const solveBtn = document.getElementById("solveBtn");
+
+    // Array where index = row, value = column (-1 means no queen in that row)
+    let queenPositions = Array(8).fill(-1);
+    
+    // One possible solution to the 8 queens puzzle
+    const solution = [0, 4, 7, 5, 2, 6, 1, 3]; // This places queens at positions (0,0), (1,4), (2,7), etc.
+
+    function createBoard() {
+      board.innerHTML = "";
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.classList.add((row + col) % 2 === 0 ? "white" : "black");
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.addEventListener("click", handleCellClick);
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function handleCellClick(event) {
+      const row = parseInt(event.target.dataset.row);
+      const col = parseInt(event.target.dataset.col);
+
+      // Toggle queen placement
+      if (queenPositions[row] === col) {
+        queenPositions[row] = -1; // Remove queen
+      } else {
+        queenPositions[row] = col; // Place queen
+      }
+
+      updateBoard();
+    }
+
+    function updateBoard() {
+      const cells = document.querySelectorAll(".cell");
+      cells.forEach((cell) => {
+        cell.textContent = "";
+        cell.classList.remove("conflict");
+      });
+
+      let conflicts = false;
+      let conflictPositions = new Set();
+
+      // First identify all conflicts
+      for (let row1 = 0; row1 < 8; row1++) {
+        const col1 = queenPositions[row1];
+        if (col1 !== -1) {
+          for (let row2 = 0; row2 < 8; row2++) {
+            const col2 = queenPositions[row2];
+            if (row2 !== row1 && col2 !== -1) {
+              if (
+                col1 === col2 || // Same column
+                Math.abs(row1 - row2) === Math.abs(col1 - col2) // Same diagonal
+              ) {
+                conflictPositions.add(`${row1},${col1}`);
+                conflictPositions.add(`${row2},${col2}`);
+                conflicts = true;
+              }
+            }
+          }
+        }
+      }
+
+      // Then place queens and mark conflicts
+      for (let row = 0; row < 8; row++) {
+        const col = queenPositions[row];
+        if (col !== -1) {
+          const index = row * 8 + col;
+          const cell = cells[index];
+          cell.textContent = "♛";
+          
+          if (conflictPositions.has(`${row},${col}`)) {
+            cell.classList.add("conflict");
+          }
+        }
+      }
+
+      const queensPlaced = queenPositions.filter(col => col !== -1).length;
+
+      if (queensPlaced === 8 && !conflicts) {
+        statusText.textContent = "🎉 Puzzle Solved! Congratulations!";
+        statusText.style.color = "#2ecc71";
+      } else {
+        statusText.textContent = `Queens placed: ${queensPlaced}/8`;
+        statusText.style.color = conflicts ? "#e74c3c" : "#333";
+      }
+    }
+
+    function resetBoard() {
+      queenPositions = Array(8).fill(-1);
+      statusText.style.color = "#333";
+      updateBoard();
+    }
+
+    function showSolution() {
+      queenPositions = [...solution];
+      updateBoard();
+    }
+
+    // Event listeners
+    resetBtn.addEventListener("click", resetBoard);
+    solveBtn.addEventListener("click", showSolution);
+
+    // Initialize the board
+    createBoard();
+    updateBoard();
+  </script>
+</body>
+</html>
